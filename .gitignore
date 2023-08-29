@@ -1,3 +1,5 @@
 sqlite-trace.log
 *.pem
 reports/*.log
+scripts/sqlite_dump/*
+scripts/migrate_log/*
