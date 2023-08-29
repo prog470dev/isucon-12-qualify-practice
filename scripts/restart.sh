@@ -14,3 +14,7 @@ sudo systemctl restart nginx
 sudo cp ../conf/mysql/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
 sudo mv /var/log/mysql/mysql-slow.log /var/log/mysql/mysql-slow.log.`date +%Y%m%d%H%M%S`
 sudo systemctl restart mysql
+
+# application
+sudo systemctl daemon-reload
+sudo systemctl restart isuports.service
