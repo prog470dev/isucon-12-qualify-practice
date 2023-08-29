@@ -1,0 +1,81 @@
+ALTER TABLE player_score DROP INDEX tenant_competition_idx;
+ALTER TABLE player_score ADD INDEX tenant_competition_player_idx (tenant_id, competition_id, player_id);
+
+-- # Query 2: 16.12 QPS, 1.39x concurrency, ID 0x6A54FF26051F9FBA789289554B08491A at byte 14014643
+-- # Scores: V/M = 0.11
+-- # Time range: 2023-08-29T14:44:35 to 2023-08-29T14:45:44
+-- # Attribute    pct   total     min     max     avg     95%  stddev  median
+-- # ============ === ======= ======= ======= ======= ======= ======= =======
+-- # Count          0    1112
+-- # Exec time     30     96s   215us   579ms    86ms   293ms    98ms    48ms
+-- # Lock time      0     2ms     1us   173us     1us     1us     5us     1us
+-- # Rows sent     24  86.27k       0     230   79.44  166.51   48.32   65.89
+-- # Rows examine  16   1.55M       0   3.69k   1.42k   3.19k  988.20   1.20k
+-- # Query size     0 106.42k      97      99   98.00   97.36    0.60   97.36
+-- # String:
+-- # Databases    isuports
+-- # Hosts        localhost
+-- # Users        isucon
+-- # Query_time distribution
+-- #   1us
+-- #  10us
+-- # 100us  ####
+-- #   1ms  ############
+-- #  10ms  ################################################################
+-- # 100ms  ##################################
+-- #    1s
+-- #  10s+
+-- # Tables
+-- #    SHOW TABLE STATUS FROM `isuports` LIKE 'player_score'\G
+-- #    SHOW CREATE TABLE `isuports`.`player_score`\G
+-- # EXPLAIN /*!50100 PARTITIONS*/
+-- SELECT DISTINCT(player_id) FROM player_score WHERE tenant_id = 95 AND competition_id = '47c5b08f4'\G
+
+-- mysql> show create table visit_history;
+-- +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+-- | Table         | Create Table                                                                                                                                                                                                                                                                                                                                           |
+-- +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+-- | visit_history | CREATE TABLE `visit_history` (
+--   `player_id` varchar(255) NOT NULL,
+--   `tenant_id` bigint unsigned NOT NULL,
+--   `competition_id` varchar(255) NOT NULL,
+--   `created_at` bigint NOT NULL,
+--   `updated_at` bigint NOT NULL,
+--   KEY `tenant_competition_idx` (`tenant_id`,`competition_id`)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci |
+-- +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+-- 1 row in set (0.00 sec)
+
+-- brfore 
+-- mysql> explain SELECT * FROM player_score WHERE tenant_id = 71 AND competition_id = '2ec2b5f6b' AND player_id = '6269df5e8' ORDER BY row_num DESC LIMIT 1\G
+-- *************************** 1. row ***************************
+--            id: 1
+--   select_type: SIMPLE
+--         table: player_score
+--    partitions: NULL
+--          type: ref
+-- possible_keys: tenant_competition_idx
+--           key: tenant_competition_idx
+--       key_len: 1030
+--           ref: const,const
+--          rows: 2873
+--      filtered: 10.00
+--         Extra: Using where; Using filesort
+-- 1 row in set, 1 warning (0.00 sec)
+
+-- after
+-- mysql> explain SELECT * FROM player_score WHERE tenant_id = 71 AND competition_id = '2ec2b5f6b' AND player_id = '6269df5e8' ORDER BY row_num DESC LIMIT 1\G
+-- *************************** 1. row ***************************
+--            id: 1
+--   select_type: SIMPLE
+--         table: player_score
+--    partitions: NULL
+--          type: ref
+-- possible_keys: tenant_competition_player_idx
+--           key: tenant_competition_player_idx
+--       key_len: 2052
+--           ref: const,const,const
+--          rows: 1
+--      filtered: 100.00
+--         Extra: Using filesort
+-- 1 row in set, 1 warning (0.00 sec)
